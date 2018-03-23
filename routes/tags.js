@@ -5,6 +5,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 
 const Tag = require('../models/tag');
+const Note = require('../models/note');
 
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/tags', (req, res, next) => {
@@ -105,11 +106,11 @@ router.put('/tags/:id', (req, res, next) => {
 });
 
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
-router.delete('/tags:id', (req, res, next) => {
-  console.log('works');
+router.delete('/tags/:id', (req, res, next) => {
+  
   const { id } = req.params;
-  console.log('works', id);
-  Tag.findByIdAndRemove({ $pull: {tags: id}})
+  
+  Note.findByIdAndRemove(id, { $pull: {'tags': id}})
     .then(() => {
       res.status(204).end();
     })

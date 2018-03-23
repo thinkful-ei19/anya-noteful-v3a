@@ -6,37 +6,39 @@ const mongoose = require('mongoose');
 
 const { TEST_MONGODB_URI } = require('../config');
 
-const Folder = require('../models/folder');
-const seedFolders = require('../db/seed/folders');
+const Tag = require('../models/tag');
+const seedTags = require('../db/seed/tags');
 
 
 const expect = chai.expect;
 
 chai.use(chaiHttp);
 
-describe('Noteful API - Folders', function () {
+describe('Noteful API - Tags', function () {
   before(function () {
-    return mongoose.connect(TEST_MONGODB_URI);
+    return mongoose.connect(TEST_MONGODB_URI)
+      .then(() => mongoose.connection.db.dropDatabase());
   });
 
   beforeEach(function () {
-    return Folder.insertMany(seedFolders)
-      .then(() => Folder.createIndexes());
+    return Tag.insertMany(seedTags)
+      .then(() => Tag.ensureIndexes());
   });
 
   afterEach(function () {
-    return mongoose.connection.db.dropDatabase();
+    return mongoose.connection.db.dropDatabase()
+      .catch(err => console.error(err));
   });
 
   after(function () {
     return mongoose.disconnect();
   });
 
-  describe('GET /api/folders', function () {
+  describe('GET /api/tags', function () {
 
-    it('should return the correct number of folders', function () {
-      const dbPromise = Folder.find();
-      const apiPromise = chai.request(app).get('/api/folders');
+    it('should return the correct number of tags', function () {
+      const dbPromise = Tag.find();
+      const apiPromise = chai.request(app).get('/api/tags');
 
       return Promise.all([dbPromise, apiPromise])
         .then(([data, res]) => {
@@ -48,8 +50,8 @@ describe('Noteful API - Folders', function () {
     });
 
     it('should return a list with the correct right fields', function () {
-      const dbPromise = Folder.find();
-      const apiPromise = chai.request(app).get('/api/folders');
+      const dbPromise = Tag.find();
+      const apiPromise = chai.request(app).get('/api/tags');
 
       return Promise.all([dbPromise, apiPromise])
         .then(([data, res]) => {
@@ -66,14 +68,14 @@ describe('Noteful API - Folders', function () {
 
   });
 
-  describe('GET /api/folders/:id', function () {
+  describe('GET /api/tags/:id', function () {
 
-    it('should return correct notes', function () {
+    it('should return correct tags', function () {
       let data;
-      return Folder.findOne().select('id name')
+      return Tag.findOne().select('id name')
         .then(_data => {
           data = _data;
-          return chai.request(app).get(`/api/folders/${data.id}`);
+          return chai.request(app).get(`/api/tags/${data.id}`);
         })
         .then((res) => {
           expect(res).to.have.status(200);
@@ -87,11 +89,11 @@ describe('Noteful API - Folders', function () {
         });
     });
 
-    it('should respond with a 400 for improperly formatted id', function () {
+    it('should respond with a 400 for an invalid ID', function () {
       const badId = '99-99-99';
 
       return chai.request(app)
-        .get(`/api/folders/${badId}`)
+        .get(`/api/tags/${badId}`)
         .catch(err => err.response)
         .then(res => {
           expect(res).to.have.status(400);
@@ -99,10 +101,10 @@ describe('Noteful API - Folders', function () {
         });
     });
 
-    it('should respond with a 404 for an invalid id', function () {
+    it('should respond with a 404 for an ID that does not exist', function () {
 
       return chai.request(app)
-        .get('/api/folders/AAAAAAAAAAAAAAAAAAAAAAAA')
+        .get('/api/tags/AAAAAAAAAAAAAAAAAAAAAAAA')
         .catch(err => err.response)
         .then(res => {
           expect(res).to.have.status(404);
@@ -111,15 +113,15 @@ describe('Noteful API - Folders', function () {
 
   });
 
-  describe('POST /api/folders', function () {
+  describe('POST /api/tags', function () {
 
     it('should create and return a new item when provided valid data', function () {
       const newItem = {
-        'name': 'Ready',
+        'name': 'newTag',
       };
       let body;
       return chai.request(app)
-        .post('/api/folders')
+        .post('/api/tags')
         .send(newItem)
         .then(function (res) {
           body = res.body;
@@ -128,9 +130,10 @@ describe('Noteful API - Folders', function () {
           expect(res).to.be.json;
           expect(body).to.be.a('object');
           expect(body).to.include.keys('id', 'name');
-          return Folder.findById(body.id);
+          return Tag.findById(body.id);
         })
         .then(data => {
+          expect(body.id).to.equal(data.id);
           expect(body.name).to.equal(data.name);
         });
     });
@@ -141,7 +144,7 @@ describe('Noteful API - Folders', function () {
       };
 
       return chai.request(app)
-        .post('/api/folders')
+        .post('/api/tags')
         .send(newItem)
         .catch(err => err.response)
         .then(res => {
@@ -152,37 +155,36 @@ describe('Noteful API - Folders', function () {
         });
     });
 
-    // it('should return an error when given a duplicate name', function () {
-    //   const newItem = {
-    //     'name': 'Personal'
-    //   };
+    it('should return an error when given a duplicate name', function () {
 
-    //   return chai.request(app)
-    //     .post('/api/folders')
-    //     .send(newItem)
-    //     .catch(err => err.response)
-    //     .then(res => {
-    //       expect(res).to.have.status(400);
-    //       expect(res).to.be.json;
-    //       expect(res.body).to.be.a('object');
-    //       expect(res.body.message).to.equal('The folder name already exists');
-    //     });
-    // });
+      return Tag.findOne().select('id name')
+        .then(data => {
+          const newItem = { 'name': data.name };
+          return chai.request(app).post('/api/tags').send(newItem);
+        })
+        .catch(err => err.response)
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body.message).to.equal('The tag name already exists');
+        });
+    });
 
   });
 
-  describe('PUT /api/folders/:id', function () {
+  describe('PUT /api/tags/:id', function () {
 
-    it('should update the folder', function () {
+    it('should update the tag', function () {
       const updateItem = {
-        'name': 'Stuff'
+        'name': 'Updated Name'
       };
       let data;
-      return Folder.findOne().select('id name')
+      return Tag.findOne().select('id name')
         .then(_data => {
           data = _data;
           return chai.request(app)
-            .put(`/api/folders/${data.id}`)
+            .put(`/api/tags/${data.id}`)
             .send(updateItem);
         })
         .then(function (res) {
@@ -197,14 +199,14 @@ describe('Noteful API - Folders', function () {
     });
 
 
-    it('should respond with a 400 for improperly formatted id', function () {
+    it('should respond with a 400 for an invalid ID', function () {
       const updateItem = {
-        'name': 'What about dogs?!'
+        'name': 'Blah'
       };
       const badId = '99-99-99';
 
       return chai.request(app)
-        .put(`/api/folders/${badId}`)
+        .put(`/api/tags/${badId}`)
         .send(updateItem)
         .catch(err => err.response)
         .then(res => {
@@ -213,13 +215,13 @@ describe('Noteful API - Folders', function () {
         });
     });
 
-    it('should respond with a 404 for an invalid id', function () {
+    it('should respond with a 404 for an ID that does not exist', function () {
       const updateItem = {
-        'name': 'What about dogs?!'
+        'name': 'Blah'
       };
 
       return chai.request(app)
-        .put('/api/folders/AAAAAAAAAAAAAAAAAAAAAAAA')
+        .put('/api/tags/AAAAAAAAAAAAAAAAAAAAAAAA')
         .send(updateItem)
         .catch(err => err.response)
         .then(res => {
@@ -233,7 +235,7 @@ describe('Noteful API - Folders', function () {
       };
 
       return chai.request(app)
-        .put('/api/folders/9999')
+        .put('/api/tags/9999')
         .send(updateItem)
         .catch(err => err.response)
         .then(res => {
@@ -244,40 +246,33 @@ describe('Noteful API - Folders', function () {
         });
     });
 
-    // it('should return an error when given a duplicate name', function () {
-    //   const updateItem = {
-    //     'name': 'Personal'
-    //   };
+    it('should return an error when given a duplicate name', function () {
 
-    //   let data;
-    //   return Folder.findOne().select('id name')
-    //     .then(_data => {
-    //       data = _data;
-    //       return chai.request(app)
-    //         .put(`/api/folders/${data.id}`)
-    //         .send(updateItem);
-    //     })
-    //     .catch(err => err.response)
-    //     .then(res => {
-    //       expect(res).to.have.status(400);
-    //       expect(res).to.be.json;
-    //       expect(res.body).to.be.a('object');
-    //       expect(res.body.message).to.equal('The folder name already exists');
-    //     });
-    // });
+      return Tag.find().select('id name').limit(2)
+        .then(results => {
+          const [item1, item2] = results;
+          item1.name = item2.name;
+          return chai.request(app).put(`/api/tags/${item1.id}`).send(item1);
+        })
+        .catch(err => err.response)
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body.message).to.equal('The tag name already exists');
+        });
+    });
 
   });
 
-  describe('DELETE /api/folders/:id', function () {
+  describe('DELETE /api/tags/:id', function () {
 
     it('should delete an item by id', function () {
-      let data;
-      return Folder.findOne().select('id name')
-        .then(_data => {
-          data = _data;
-          return chai.request(app).delete(`/api/folders/${data.id}`);
+      return Tag.findOne().select('id name')
+        .then(data => {
+          return chai.request(app).delete(`/api/tags/${data.id}`);
         })
-        .then(function (res) {
+        .then((res) => {
           expect(res).to.have.status(204);
         });
     });
