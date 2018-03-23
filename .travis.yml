@@ -1,11 +1,11 @@
 language: node_js
 node_js: node
-services: 
-  - mongodb
-# deploy:
-#     provider: heroku
-#     api_key:
-#       secure: [YOUR-API-KEY]
-#     app: [YOUR-APP-NAME]
-#     on:
-#       repo: [YOUR-APP-REPO]
+services:
+- mongodb
+deploy:
+  provider: heroku
+  api_key:
+    secure: LC7QQ7fR5CMTzuf8AziWlSxeX/q2XwXHA2wfEgFI9PCGzn7aN++yBrxxrS373eLXcciBX6O4Cxda97Iuov8lY2WeDeQQSbCcL2aqAltaW1gJJIzbwual7QJSGt9tHJH6GhaRLBWiCAHndHCWw7cNkDLu4WTbbTgKFqiGxjD3vytHSi9CF5eIdAn+JB/VnRGQlYUX2+oXNefbE5kebg7hdEEzSaoAkh6ohFvLoF8ldsd8VfTHi914dSVHLTTaCc0iVVddusUrK6Mxfmm6sAXq1POnNtdZtbfZzmq2zrSAU13rPGadnFrY4gYY4Cof0V3mp6jpBJ0Vs8GYICPA+G20iPeKyJJqeSWXDiuklN866l1we4H2YPWM1yN9mZWCz7j93qY7P1wnVG2c7T8xZILpBrBl2OtwxGysWCqb01+DsmyZR6drASrcThYPUZsMJCJJJ/v7emAwXqlXk8Z8V83TqCSB98GxMCgDjMa/Wi5wwJH72LNwK80YBD1sbYS7Abxawmg4ha7GpUsasnGb3mtHrChjE4+aTEli21aC/JmShbsUvbiSoyLzedrrrmShvaj/Sz90WT8iM0IXzvUChm+soE/HC2MwcG9G8t9db69+J0IKJxT8g/JQMMb0SmAFQAwF8wRhEidQX5onYdJ0AvhHBE/Cfq6LJ+VNlGACYKwjiUk=
+  app: anya-noteful-v3a
+  on:
+    repo: thinkful-ei19/anya-noteful-v3a
